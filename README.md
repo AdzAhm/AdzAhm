@@ -10,9 +10,9 @@
 </p>
 
 ---
-
+## !! PROFILE UNDER CONSTRUCTION  ⚠️ !! 
 ### 👨‍💻 About Me
-!! PROFILE UNDER CONSTRUCTION  ⚠️ !! 
+
 * 🔭 I’m currently working on **[REDACTED]**
 * 🌱 I’m currently learning 
 * 👯 I’m looking to collaborate on 
