@@ -50,7 +50,7 @@
 ### 🤝 Let's Connect
 <div align="center">
   <!-- URL Encoded 1D Spaceship Animation -->
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=20&pause=300&color=38B2AC&center=true&vCenter=true&width=400&lines=%F0%9F%9A%80+-------------+%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80+----+%F0%9F%92%A5--------+%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80+---------+%F0%9F%92%A5---+%F0%9F%91%BE;%F0%9F%9A%80+-------+%F0%9F%92%A5-----+%F0%9F%91%BE;%F0%9F%9A%80+-------------+%F0%9F%92%A5;%F0%9F%9A%80+-------------+%E2%9C%A8;--------+%F0%9F%9A%80+------;----+%F0%9F%9A%80+----------;%F0%9F%9A%80+-------------" alt="1D Spaceship Animation" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=18&pause=300&color=38B2AC&center=true&vCenter=true&width=500&lines=%F0%9F%9A%80%E2%96%AE-------%E2%96%AE--+%F0%9F%91%BE%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80-+%E2%9C%A7----+%E2%97%80-+%F0%9F%91%BE%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80---+%E2%9C%A7-----%F0%9F%92%A5%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80%F0%9F%9B%A1%EF%B8%8F----+%E2%97%80---+%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80-----+%E2%9C%A7----%F0%9F%92%A5%F0%9F%91%BE;%F0%9F%9A%80%E2%96%AE-------%E2%96%AE----+%F0%9F%91%BE;%F0%9F%9A%80------+%E2%9C%A7---%F0%9F%92%A5;%F0%9F%9A%80-----------%E2%A8%BF%E2%9C%A8%E2%A8%BF;----+%F0%9F%9A%80---------;--------+%F0%9F%9A%80-----" alt="Advanced 1D Arcade Animation" />
 </div>
 
 <br/>
