@@ -36,21 +36,21 @@
 
 <div align="center">
   <!-- Replace YOUR_GITHUB_USERNAME with your actual GitHub handle -->
-  <img src="https://github-readme-stats.vercel.app/api?username=YOUR_GITHUB_USERNAME&show_icons=true&theme=tokyonight&hide_border=true&include_all_commits=true&count_private=true" alt="GitHub Stats" />
+  <img src="https://github-readme-stats.vercel.app/api?username=AdzAhm&show_icons=true&theme=tokyonight&hide_border=true&include_all_commits=true&count_private=true" alt="GitHub Stats" />
   <br/><br/>
   <!-- Top Languages Graph -->
-  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=YOUR_GITHUB_USERNAME&layout=compact&theme=tokyonight&hide_border=true" alt="Top Languages" />
+  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=AdzAhm&layout=compact&theme=tokyonight&hide_border=true" alt="Top Languages" />
   <br/><br/>
   <!-- Contribution Streak Graph -->
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=YOUR_GITHUB_USERNAME&theme=tokyonight&hide_border=true" alt="GitHub Streak" />
+  <img src="https://github-readme-streak-stats.herokuapp.com/?user=AdzAhm&theme=tokyonight&hide_border=true" alt="GitHub Streak" />
 </div>
 
 ---
 
 ### 🤝 Let's Connect
-
-
 <div align="center">
-  <!-- 1D Spaceship Animation -->
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=20&pause=300&color=38B2AC&center=true&vCenter=true&width=400&lines=🚀+-------------+👾👾;🚀+----+💥--------+👾👾;🚀+---------+💥---+👾;🚀+-------+💥-----+👾;🚀+-------------+💥;🚀+-------------+✨;--------+🚀+------;----+🚀+----------;🚀+-------------" alt="1D Spaceship Animation" />
+  <!-- URL Encoded 1D Spaceship Animation -->
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=20&pause=300&color=38B2AC&center=true&vCenter=true&width=400&lines=%F0%9F%9A%80+-------------+%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80+----+%F0%9F%92%A5--------+%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80+---------+%F0%9F%92%A5---+%F0%9F%91%BE;%F0%9F%9A%80+-------+%F0%9F%92%A5-----+%F0%9F%91%BE;%F0%9F%9A%80+-------------+%F0%9F%92%A5;%F0%9F%9A%80+-------------+%E2%9C%A8;--------+%F0%9F%9A%80+------;----+%F0%9F%9A%80+----------;%F0%9F%9A%80+-------------" alt="1D Spaceship Animation" />
 </div>
+
+<br/>
