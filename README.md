@@ -26,7 +26,7 @@
 <!-- You can customize the icons by changing the 'i=' parameter. Find more at https://skillicons.dev -->
 <div align="center">
   <a href="https://skillicons.dev">
-    <img src="https://skillicons.dev/icons?i=&theme=dark&perline=5" alt="Skills Grid" />
+     <img src="https://skillicons.dev/icons?i=py,c,cpp,git,cs&theme=dark&perline=5" alt="Skills Grid" />
   </a>
 </div>
 
