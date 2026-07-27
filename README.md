@@ -15,10 +15,8 @@
 
 * 🔭 I’m currently working on **[REDACTED]**
 * 🌱 I’m currently learning 
-* 👯 I’m looking to collaborate on 
-* 💬 Ask me about 
-* ⚡ Fun fact: 
-
+* ⚡ Fun fact:
+  
 ---
 
 ### 🛠️ Tech Stack & Tools
@@ -26,7 +24,29 @@
 <!-- You can customize the icons by changing the 'i=' parameter. Find more at https://skillicons.dev -->
 <div align="center">
   <a href="https://skillicons.dev">
-     <img src="https://skillicons.dev/icons?i=py,c,cpp,git,cs&theme=dark&perline=5" alt="Skills Grid" />
+     <div align="center">
+
+### 👨‍💻 Languages & Development
+<a href="https://skillicons.dev">
+  <img src="https://skillicons.dev/icons?i=c,cpp,cs,py,unity,arduino&theme=dark" alt="Languages and Engines" />
+</a>
+
+### ⚙️ Tools & Environment
+<a href="https://skillicons.dev">
+  <img src="https://skillicons.dev/icons?i=linux,ubuntu,vscode,git,github,bots&theme=dark" alt="Tools and Environment" />
+</a>
+
+### 🎨 Creative Suite
+<a href="https://skillicons.dev">
+  <img src="https://skillicons.dev/icons?i=pr,ae,au&theme=dark" alt="Creative Suite" />
+</a>
+
+### 🚀 Workspace & Socials
+<a href="https://skillicons.dev">
+  <img src="https://skillicons.dev/icons?i=notion,discord,linkedin,gmail,instagram&theme=dark" alt="Workspace and Connect" />
+</a>
+
+</div>
   </a>
 </div>
 
