@@ -18,7 +18,7 @@
 ## 🛰️ About me
 
 - 💻 Computer engineer who likes building things from the ground up: logic gates, renderers, game mechanics.
-- 🔭 I'm currently working on **[REDACTED]**
+- 🔭 I'm currently working on **[BitSorter](https://github.com/AdzAhm/BitSorter)**
 - 🌱 Exploring graphics programming, multithreading in modern C++, and GPU computing.
 - 💬 Ask me about Unity, C and C++, Arduino, or digital logic.
 <!-- - ⚡ Fun fact: add yours here and remove the comment markers -->
