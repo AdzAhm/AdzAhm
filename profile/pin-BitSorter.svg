@@ -122,7 +122,7 @@
     
 
     <text class="description" x="25" y="-5"> 
-      <tspan dy="1.2em" x="25">BitSorter: Bits fall through logic. Sort them. A puzzle game</tspan><tspan dy="1.2em" x="25">about building digital circuits, made in Unity.</tspan>
+      <tspan dy="1.2em" x="25">A SystemVerilog simulator for the Digital Systems and</tspan><tspan dy="1.2em" x="25">Computer Structure course: draw a circuit or write it, run it</tspan><tspan dy="1.2em" x="25">on a 4-state event-driven engine with real gate delays, read...</tspan>
     </text>
 
     <g transform="translate(30, 75)">
