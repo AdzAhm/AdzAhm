@@ -76,14 +76,14 @@
   <img src="profile/contrib-3d.svg" width="100%" alt="3D contribution calendar for the past year" />
 </div>
 
-<!-- Hidden until these cards render again (the metrics plugins behind them are broken upstream).
-## 🏅 Achievements & coding habits
+## 🏅 Trophies & coding habits
 
 <div align="center">
-  <img src="profile/metrics-achievements.svg" width="410" alt="GitHub achievements" />
-  <img src="profile/metrics-habits.svg" width="410" alt="Recent coding habits: when I commit and which languages" />
+  <img src="profile/trophies.svg" width="100%" alt="GitHub trophies: commits, pull requests, experience, reviews, issues and repositories" />
+  <br /><br />
+  <img src="profile/productive-time.svg" alt="Commits per hour of the day (UTC+3)" />
+  <img src="profile/metrics-lines.svg" width="480" alt="Lines of code added and deleted per week" />
 </div>
--->
 
 ## 👾 Contribution invaders
 

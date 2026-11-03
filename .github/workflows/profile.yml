@@ -5,7 +5,6 @@
 #   profile/pin-<repo>.svg                     featured project cards (repos listed in README.md)
 #   profile/contrib-3d.svg                     3D contribution calendar
 #   profile/metrics-lines.svg                  lines of code pushed      (lowlighter/metrics)
-#   profile/metrics-notable.svg                notable contributions     (lowlighter/metrics)
 #   profile/trophies.svg                       trophies                  (ryo-ma/github-profile-trophy)
 #   profile/productive-time.svg                commits per hour of day   (github-profile-summary-cards)
 #   profile/space-shooter.gif                  contribution graph as a space shooter
@@ -13,7 +12,7 @@
 # It runs every day, when started by hand (Actions > Profile cards > Run workflow),
 # and whenever README.md, this file or scripts/commit-generated.sh changes on main.
 #
-# Everything works with the built-in GITHUB_TOKEN except the two metrics cards,
+# Everything works with the built-in GITHUB_TOKEN except the metrics card,
 # which need a personal access token:
 #   1. github.com/settings/tokens > Generate new token > Generate new token (classic).
 #      Fine-grained tokens do not work with metrics. Set Expiration to a long
@@ -24,7 +23,7 @@
 #   2. This repository > Settings > Secrets and variables > Actions >
 #      New repository secret. Name it METRICS_TOKEN and paste the token.
 #   3. Run this workflow once by hand.
-# Without that secret the metrics steps are skipped and everything else still updates.
+# Without that secret the metrics step is skipped and everything else still updates.
 #
 # Every generator step may fail without failing the run: the previous image
 # stays in place until the next successful run.
@@ -196,8 +195,8 @@ jobs:
       # whether it is the official action; with an id it skips its prebuilt image
       # and tries to build one from scratch, which currently fails.
       # (The achievements and habits plugins are broken upstream since GitHub
-      # retired Projects classic and dropped commits from push events, so these
-      # two plugins avoid both.)
+      # retired Projects classic and dropped commits from push events; the lines
+      # plugin used here avoids both.)
       - name: Metrics - lines of code
         if: steps.metrics.outputs.enabled == 'true'
         uses: lowlighter/metrics@latest
@@ -213,38 +212,20 @@ jobs:
           retries_delay: 30
           base: ""
           plugin_lines: yes
-          plugin_lines_sections: repositories, history
-          plugin_lines_repositories_limit: 4
+          # The chart only; the per-repo list would name projects outside Featured projects.
+          plugin_lines_sections: history
           plugin_lines_history_limit: 1
           # GitHub computes these stats on first request; wait for them.
           plugin_lines_delay: 30
           # Skip this repo: its daily image commits would inflate the totals.
           plugin_lines_skipped: ${{ github.repository }}
 
-      - name: Metrics - notable contributions
-        if: steps.metrics.outputs.enabled == 'true'
-        uses: lowlighter/metrics@latest
-        continue-on-error: true
-        timeout-minutes: 8
-        with:
-          token: ${{ secrets.METRICS_TOKEN }}
-          filename: metrics-notable.svg
-          output_action: none
-          plugins_errors_fatal: yes
-          retries: 2
-          retries_delay: 30
-          base: ""
-          plugin_notable: yes
-          plugin_notable_from: all
-          plugin_notable_types: commit, pull_request, issue
-          plugin_notable_repositories: yes
-
       - name: Collect metrics images
         if: steps.metrics.outputs.enabled == 'true'
         run: |
           mkdir -p profile
           missing=""
-          for f in metrics-lines.svg metrics-notable.svg; do
+          for f in metrics-lines.svg; do
             if sudo test -s "/metrics_renders/$f"; then
               sudo cp "/metrics_renders/$f" "profile/$f"
             else
