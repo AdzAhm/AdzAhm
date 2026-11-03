@@ -1,0 +1,256 @@
+# Profile cards
+#
+# Builds the images on the profile README and commits them to profile/:
+#   profile/stats.svg, profile/top-langs.svg   GitHub stats cards (github-readme-stats)
+#   profile/pin-<repo>.svg                     featured project cards (repos listed in README.md)
+#   profile/contrib-3d.svg                     3D contribution calendar
+#   profile/metrics-achievements.svg           achievements   (lowlighter/metrics)
+#   profile/metrics-habits.svg                 coding habits  (lowlighter/metrics)
+#   profile/space-shooter.gif                  contribution graph as a space shooter
+#
+# It runs every day, when started by hand (Actions > Profile cards > Run workflow),
+# and whenever this file changes on main.
+#
+# Everything works with the built-in GITHUB_TOKEN except the two metrics cards,
+# which need a personal access token:
+#   1. github.com/settings/tokens > Generate new token (classic). No scopes are
+#      needed; tick read:user only if you want private activity counted.
+#   2. This repository > Settings > Secrets and variables > Actions >
+#      New repository secret. Name it METRICS_TOKEN and paste the token.
+#   3. Run this workflow once by hand.
+# Without that secret the metrics steps are skipped and everything else still updates.
+#
+# Every generator step may fail without failing the run: the previous image
+# stays in place until the next successful run.
+
+name: Profile cards
+
+on:
+  schedule:
+    - cron: "23 2 * * *" # daily, 02:23 UTC
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/profile.yml
+      - scripts/commit-generated.sh
+
+permissions:
+  contents: write
+
+concurrency:
+  group: profile-cards
+  cancel-in-progress: false
+
+jobs:
+  cards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Stats card
+        uses: stats-organization/github-readme-stats-action@v2
+        continue-on-error: true
+        with:
+          card: stats
+          options: username=${{ github.repository_owner }}&show_icons=true&theme=tokyonight&hide_border=true&border_radius=10&include_all_commits=true&count_private=true
+          path: profile/stats.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true
+
+      - name: Top languages card
+        uses: stats-organization/github-readme-stats-action@v2
+        continue-on-error: true
+        with:
+          card: top-langs
+          options: username=${{ github.repository_owner }}&layout=compact&langs_count=8&theme=tokyonight&hide_border=true&border_radius=10
+          path: profile/top-langs.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true
+
+      # The featured repos are whatever README.md links as profile/pin-<repo>.svg,
+      # so changing the list only means editing the README.
+      - name: Find featured projects
+        id: featured
+        run: |
+          mapfile -t repos < <(grep -oE 'profile/pin-[A-Za-z0-9._-]+\.svg' README.md \
+            | sed -E 's#^profile/pin-(.+)\.svg$#\1#' | awk '!seen[$0]++')
+          if [ "${#repos[@]}" -gt 6 ]; then
+            echo "::warning::README.md lists ${#repos[@]} project cards; only the first 6 are built."
+          fi
+          for i in 1 2 3 4 5 6; do
+            echo "pin$i=${repos[$((i - 1))]:-}" >> "$GITHUB_OUTPUT"
+          done
+          echo "Featured: ${repos[*]:0:6}"
+          # Drop cards for repos that are no longer in the README.
+          for f in profile/pin-*.svg; do
+            [ -e "$f" ] || continue
+            name="${f#profile/pin-}"; name="${name%.svg}"
+            printf '%s\n' "${repos[@]:0:6}" | grep -qxF -- "$name" || rm -f -- "$f"
+          done
+
+      - name: Project card 1
+        if: steps.featured.outputs.pin1 != ''
+        uses: stats-organization/github-readme-stats-action@v2
+        continue-on-error: true
+        with:
+          card: pin
+          options: username=${{ github.repository_owner }}&repo=${{ steps.featured.outputs.pin1 }}&theme=tokyonight&hide_border=true&border_radius=10&description_lines_count=3
+          path: profile/pin-${{ steps.featured.outputs.pin1 }}.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true
+
+      - name: Project card 2
+        if: steps.featured.outputs.pin2 != ''
+        uses: stats-organization/github-readme-stats-action@v2
+        continue-on-error: true
+        with:
+          card: pin
+          options: username=${{ github.repository_owner }}&repo=${{ steps.featured.outputs.pin2 }}&theme=tokyonight&hide_border=true&border_radius=10&description_lines_count=3
+          path: profile/pin-${{ steps.featured.outputs.pin2 }}.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true
+
+      - name: Project card 3
+        if: steps.featured.outputs.pin3 != ''
+        uses: stats-organization/github-readme-stats-action@v2
+        continue-on-error: true
+        with:
+          card: pin
+          options: username=${{ github.repository_owner }}&repo=${{ steps.featured.outputs.pin3 }}&theme=tokyonight&hide_border=true&border_radius=10&description_lines_count=3
+          path: profile/pin-${{ steps.featured.outputs.pin3 }}.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true
+
+      - name: Project card 4
+        if: steps.featured.outputs.pin4 != ''
+        uses: stats-organization/github-readme-stats-action@v2
+        continue-on-error: true
+        with:
+          card: pin
+          options: username=${{ github.repository_owner }}&repo=${{ steps.featured.outputs.pin4 }}&theme=tokyonight&hide_border=true&border_radius=10&description_lines_count=3
+          path: profile/pin-${{ steps.featured.outputs.pin4 }}.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true
+
+      - name: Project card 5
+        if: steps.featured.outputs.pin5 != ''
+        uses: stats-organization/github-readme-stats-action@v2
+        continue-on-error: true
+        with:
+          card: pin
+          options: username=${{ github.repository_owner }}&repo=${{ steps.featured.outputs.pin5 }}&theme=tokyonight&hide_border=true&border_radius=10&description_lines_count=3
+          path: profile/pin-${{ steps.featured.outputs.pin5 }}.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true
+
+      - name: Project card 6
+        if: steps.featured.outputs.pin6 != ''
+        uses: stats-organization/github-readme-stats-action@v2
+        continue-on-error: true
+        with:
+          card: pin
+          options: username=${{ github.repository_owner }}&repo=${{ steps.featured.outputs.pin6 }}&theme=tokyonight&hide_border=true&border_radius=10&description_lines_count=3
+          path: profile/pin-${{ steps.featured.outputs.pin6 }}.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true
+
+      - name: 3D contribution calendar
+        uses: yoshi389111/github-profile-3d-contrib@latest
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ github.repository_owner }}
+
+      - name: Keep the night-view calendar
+        run: |
+          mkdir -p profile
+          if [ -s profile-3d-contrib/profile-night-view.svg ]; then
+            mv profile-3d-contrib/profile-night-view.svg profile/contrib-3d.svg
+          fi
+          rm -rf profile-3d-contrib
+
+      - name: Check for METRICS_TOKEN
+        id: metrics
+        env:
+          METRICS_TOKEN: ${{ secrets.METRICS_TOKEN }}
+        run: |
+          if [ -n "$METRICS_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Metrics skipped::Add a METRICS_TOKEN repository secret to build the achievements and habits cards. Steps are at the top of .github/workflows/profile.yml."
+          fi
+
+      - name: Metrics - achievements
+        if: steps.metrics.outputs.enabled == 'true'
+        uses: lowlighter/metrics@latest
+        continue-on-error: true
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          filename: metrics-achievements.svg
+          output_action: none
+          base: ""
+          plugin_achievements: yes
+          plugin_achievements_display: compact
+          plugin_achievements_threshold: C
+
+      - name: Metrics - coding habits
+        if: steps.metrics.outputs.enabled == 'true'
+        uses: lowlighter/metrics@latest
+        continue-on-error: true
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          filename: metrics-habits.svg
+          output_action: none
+          base: ""
+          plugin_habits: yes
+          plugin_habits_facts: yes
+          plugin_habits_charts: yes
+          # Your commits are stamped UTC+3. Etc/GMT-3 means UTC+3 (the sign is
+          # inverted in these names); swap in your own IANA zone name if you like.
+          config_timezone: Etc/GMT-3
+
+      - name: Collect metrics images
+        if: steps.metrics.outputs.enabled == 'true'
+        run: |
+          mkdir -p profile
+          for f in metrics-achievements.svg metrics-habits.svg; do
+            if sudo test -s "/metrics_renders/$f"; then
+              sudo cp "/metrics_renders/$f" "profile/$f"
+            fi
+          done
+          sudo chown -R "$(id -u):$(id -g)" profile
+
+      - name: Commit images
+        run: bash scripts/commit-generated.sh "Update profile cards"
+
+  # Separate job so the cards above go live even if this slower one takes a while.
+  space-shooter:
+    needs: cards
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # The latest tip, including the commit the cards job just pushed.
+          ref: ${{ github.ref }}
+          fetch-depth: 2
+
+      - run: mkdir -p profile
+
+      - name: Space shooter
+        uses: czl9707/gh-space-shooter@v2
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          output-path: profile/space-shooter.gif
+          strategy: random
+          fps: "30"
+          no-commit: "true"
+
+      - name: Commit images
+        run: bash scripts/commit-generated.sh "Update profile cards"

@@ -1,76 +1,107 @@
-<h1 align="center">Hi there, I'm Ahmad 👋</h1>
+<!--
+  Profile README for github.com/AdzAhm
+
+  Images:
+    assets/header.svg, assets/footer.svg  made by scripts/generate_space_svgs.py
+                                          (edit the text/colors there and re-run it)
+    profile/*                             rebuilt daily by .github/workflows/profile.yml
+-->
 
 <div align="center">
-  <!-- Dynamic Typing Effect Header -->
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=38B2AC&center=true&vCenter=true&width=435&lines=Computer+Engineer;Tech+Enthusiast;Always+Learning" alt="Typing SVG" />
+  <img src="assets/header.svg" width="100%" alt="Hi there, I'm Ahmad. Computer engineer, tech enthusiast, building from scratch, always learning." />
+
+  <br />
+
+  <img src="https://komarev.com/ghpvc/?username=AdzAhm&label=profile%20views&color=7aa2f7&style=flat-square" alt="Profile views" />
 </div>
+
+## 🛰️ About me
+
+- 💻 Computer engineer who likes building things from the ground up: logic gates, renderers, game mechanics.
+- 🔭 I'm currently working on **[REDACTED]**
+- 🌱 Exploring graphics programming, multithreading in modern C++, and GPU computing.
+- 💬 Ask me about Unity, C and C++, Arduino, or digital logic.
+<!-- - ⚡ Fun fact: add yours here and remove the comment markers -->
+
+## 🧰 Tech stack
+
+<table align="center">
+  <tr>
+    <td align="right"><b>Languages</b></td>
+    <td><img src="https://skillicons.dev/icons?i=c,cpp,cs,py&theme=dark" height="44" alt="C, C++, C#, Python" /></td>
+  </tr>
+  <tr>
+    <td align="right"><b>Engines &amp; hardware</b></td>
+    <td><img src="https://skillicons.dev/icons?i=unity,arduino&theme=dark" height="44" alt="Unity, Arduino" /></td>
+  </tr>
+  <tr>
+    <td align="right"><b>Tools</b></td>
+    <td><img src="https://skillicons.dev/icons?i=linux,ubuntu,vscode,visualstudio,git,github,githubactions,docker,cmake,bots&theme=dark" height="44" alt="Linux, Ubuntu, VS Code, Visual Studio, Git, GitHub, GitHub Actions, Docker, CMake, bots" /></td>
+  </tr>
+  <tr>
+    <td align="right"><b>Creative</b></td>
+    <td><img src="https://skillicons.dev/icons?i=pr,ae,au&theme=dark" height="44" alt="Premiere Pro, After Effects, Audition" /></td>
+  </tr>
+  <tr>
+    <td align="right"><b>Workspace</b></td>
+    <td><img src="https://skillicons.dev/icons?i=notion,discord&theme=dark" height="44" alt="Notion, Discord" /></td>
+  </tr>
+</table>
+
+## 🚀 Featured projects
+
+<!--
+  These cards are rebuilt every day from the repos themselves (description,
+  main language, stars, forks), so changes to a project show up here on their own.
+  To feature a different repo, change the repo name in a line below, in both the
+  link and the image path (profile/pin-<repo name>.svg). Up to 6 cards.
+  A card shows the repo's description, set from the gear icon next to "About"
+  on the repo's GitHub page.
+-->
+<div align="center">
+  <a href="https://github.com/AdzAhm/BitSorter"><img src="profile/pin-BitSorter.svg" width="49%" alt="BitSorter" /></a>
+  <a href="https://github.com/AdzAhm/custom-physics-render-engine"><img src="profile/pin-custom-physics-render-engine.svg" width="49%" alt="custom-physics-render-engine" /></a>
+  <a href="https://github.com/AdzAhm/cudaq-performance-benchmarking"><img src="profile/pin-cudaq-performance-benchmarking.svg" width="49%" alt="cudaq-performance-benchmarking" /></a>
+</div>
+
+## 📊 GitHub stats
+
+<div align="center">
+  <img src="profile/stats.svg" height="180" alt="Ahmad's GitHub stats" />
+  <img src="profile/top-langs.svg" height="180" alt="Most used languages" />
+  <br /><br />
+  <img src="https://streak-stats.demolab.com/?user=AdzAhm&theme=tokyonight&hide_border=true&border_radius=10" alt="Contribution streak" />
+  <br /><br />
+  <img src="profile/contrib-3d.svg" width="100%" alt="3D contribution calendar for the past year" />
+</div>
+
+## 🏅 Achievements & coding habits
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><img src="profile/metrics-achievements.svg" width="100%" alt="GitHub achievements" /></td>
+    <td width="50%" valign="top"><img src="profile/metrics-habits.svg" width="100%" alt="Recent coding habits: when I commit and which languages" /></td>
+  </tr>
+</table>
+
+## 👾 Contribution invaders
+
+<div align="center">
+  <img src="profile/space-shooter.gif" width="100%" alt="My contribution graph as a space shooter: a ship shoots down each day's contributions" />
+</div>
+
+<!--
+## 🤝 Let's connect
+
+Fill in your handles, then delete the comment markers around this section.
 
 <p align="center">
-  Welcome to my GitHub profile! I love building cool things and learning new technologies.
+  <a href="https://github.com/AdzAhm"><img src="https://skillicons.dev/icons?i=github&theme=dark" height="44" alt="GitHub" /></a>
+  <a href="https://www.linkedin.com/in/YOUR-HANDLE"><img src="https://skillicons.dev/icons?i=linkedin&theme=dark" height="44" alt="LinkedIn" /></a>
+  <a href="https://www.instagram.com/YOUR-HANDLE"><img src="https://skillicons.dev/icons?i=instagram&theme=dark" height="44" alt="Instagram" /></a>
+  <a href="https://discord.com/users/YOUR-USER-ID"><img src="https://skillicons.dev/icons?i=discord&theme=dark" height="44" alt="Discord" /></a>
+  <a href="mailto:YOUR-ADDRESS"><img src="https://skillicons.dev/icons?i=gmail&theme=dark" height="44" alt="Email" /></a>
 </p>
+-->
 
----
-## !! PROFILE UNDER CONSTRUCTION  ⚠️ !! 
-### 👨‍💻 About Me
-
-* 🔭 I’m currently working on **[REDACTED]**
-* 🌱 I’m currently learning 
-* ⚡ Fun fact:
-  
----
-
-### 🛠️ Tech Stack & Tools
-
-<!-- You can customize the icons by changing the 'i=' parameter. Find more at https://skillicons.dev -->
-<div align="center">
-  <a href="https://skillicons.dev">
-     <div align="center">
-
-### 👨‍💻 Languages & Development
-<a href="https://skillicons.dev">
-  <img src="https://skillicons.dev/icons?i=c,cpp,cs,py,unity,arduino&theme=dark" alt="Languages and Engines" />
-</a>
-
-### ⚙️ Tools & Environment
-<a href="https://skillicons.dev">
-  <img src="https://skillicons.dev/icons?i=linux,ubuntu,vscode,git,github,bots&theme=dark" alt="Tools and Environment" />
-</a>
-
-### 🎨 Creative Suite
-<a href="https://skillicons.dev">
-  <img src="https://skillicons.dev/icons?i=pr,ae,au&theme=dark" alt="Creative Suite" />
-</a>
-
-### 🚀 Workspace & Socials
-<a href="https://skillicons.dev">
-  <img src="https://skillicons.dev/icons?i=notion,discord,linkedin,gmail,instagram&theme=dark" alt="Workspace and Connect" />
-</a>
-
-</div>
-  </a>
-</div>
-
----
-
-### 📊 GitHub Stats & Graphs
-
-<div align="center">
-  <!-- Replace YOUR_GITHUB_USERNAME with your actual GitHub handle -->
-  <img src="https://github-readme-stats.vercel.app/api?username=AdzAhm&show_icons=true&theme=tokyonight&hide_border=true&include_all_commits=true&count_private=true" alt="GitHub Stats" />
-  <br/><br/>
-  <!-- Top Languages Graph -->
-  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=AdzAhm&layout=compact&theme=tokyonight&hide_border=true" alt="Top Languages" />
-  <br/><br/>
-  <!-- Contribution Streak Graph -->
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=AdzAhm&theme=tokyonight&hide_border=true" alt="GitHub Streak" />
-</div>
-
----
-
-### 🤝 Let's Connect
-<div align="center">
-  <!-- URL Encoded 1D Spaceship Animation -->
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=18&pause=300&color=38B2AC&center=true&vCenter=true&width=500&lines=%F0%9F%9A%80%E2%96%AE-------%E2%96%AE--+%F0%9F%91%BE%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80-+%E2%9C%A7----+%E2%97%80-+%F0%9F%91%BE%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80---+%E2%9C%A7-----%F0%9F%92%A5%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80%F0%9F%9B%A1%EF%B8%8F----+%E2%97%80---+%F0%9F%91%BE%F0%9F%91%BE;%F0%9F%9A%80-----+%E2%9C%A7----%F0%9F%92%A5%F0%9F%91%BE;%F0%9F%9A%80%E2%96%AE-------%E2%96%AE----+%F0%9F%91%BE;%F0%9F%9A%80------+%E2%9C%A7---%F0%9F%92%A5;%F0%9F%9A%80-----------%E2%A8%BF%E2%9C%A8%E2%A8%BF;----+%F0%9F%9A%80---------;--------+%F0%9F%9A%80-----" alt="Advanced 1D Arcade Animation" />
-</div>
-
-<br/>
+<img src="assets/footer.svg" width="100%" alt="Pixel spaceship shooting aliens above the words: Thanks for visiting! See you in orbit." />
