@@ -190,8 +190,10 @@ jobs:
             echo "::notice title=Metrics skipped::Add a METRICS_TOKEN repository secret to build the achievements and habits cards. Steps are at the top of .github/workflows/profile.yml."
           fi
 
+      # The metrics steps must not have an `id:`. Metrics reads the step id to tell
+      # whether it is the official action; with an id it skips its prebuilt image
+      # and tries to build one from scratch, which currently fails.
       - name: Metrics - achievements
-        id: ach
         if: steps.metrics.outputs.enabled == 'true'
         uses: lowlighter/metrics@latest
         continue-on-error: true
@@ -210,7 +212,6 @@ jobs:
           plugin_achievements_threshold: C
 
       - name: Metrics - coding habits
-        id: habits
         if: steps.metrics.outputs.enabled == 'true'
         uses: lowlighter/metrics@latest
         continue-on-error: true
@@ -235,16 +236,18 @@ jobs:
         if: steps.metrics.outputs.enabled == 'true'
         run: |
           mkdir -p profile
+          missing=""
           for f in metrics-achievements.svg metrics-habits.svg; do
             if sudo test -s "/metrics_renders/$f"; then
               sudo cp "/metrics_renders/$f" "profile/$f"
+            else
+              missing="$missing $f"
             fi
           done
           sudo chown -R "$(id -u):$(id -g)" profile
-
-      - name: Warn if metrics failed
-        if: steps.metrics.outputs.enabled == 'true' && (steps.ach.outcome == 'failure' || steps.habits.outcome == 'failure')
-        run: echo "::warning title=Metrics not updated::A metrics step failed. If it says 'Bad credentials', METRICS_TOKEN has expired or been revoked; put a new token in the secret."
+          if [ -n "$missing" ]; then
+            echo "::warning title=Metrics not updated::Not rendered:$missing. See the metrics steps above; 'Bad credentials' there means METRICS_TOKEN has expired or been revoked."
+          fi
 
       - name: Commit images
         run: bash scripts/commit-generated.sh "Update profile cards"
