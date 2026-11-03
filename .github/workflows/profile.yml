@@ -9,12 +9,16 @@
 #   profile/space-shooter.gif                  contribution graph as a space shooter
 #
 # It runs every day, when started by hand (Actions > Profile cards > Run workflow),
-# and whenever this file changes on main.
+# and whenever README.md, this file or scripts/commit-generated.sh changes on main.
 #
 # Everything works with the built-in GITHUB_TOKEN except the two metrics cards,
 # which need a personal access token:
-#   1. github.com/settings/tokens > Generate new token (classic). No scopes are
-#      needed; tick read:user only if you want private activity counted.
+#   1. github.com/settings/tokens > Generate new token > Generate new token (classic).
+#      Fine-grained tokens do not work with metrics. Set Expiration to a long
+#      period (or No expiration): when it runs out, these two cards stop updating
+#      until you put a new token in the secret. No scopes are needed. To count
+#      private contributions, turn on "Include private contributions on my
+#      profile" in your GitHub profile settings.
 #   2. This repository > Settings > Secrets and variables > Actions >
 #      New repository secret. Name it METRICS_TOKEN and paste the token.
 #   3. Run this workflow once by hand.
@@ -32,6 +36,7 @@ on:
   push:
     branches: [main]
     paths:
+      - README.md # the featured project list lives there
       - .github/workflows/profile.yml
       - scripts/commit-generated.sh
 
@@ -49,6 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ github.ref }} # the current tip, not the commit the run was queued at
           fetch-depth: 2
 
       - name: Stats card
@@ -185,26 +191,38 @@ jobs:
           fi
 
       - name: Metrics - achievements
+        id: ach
         if: steps.metrics.outputs.enabled == 'true'
         uses: lowlighter/metrics@latest
         continue-on-error: true
+        timeout-minutes: 8
         with:
           token: ${{ secrets.METRICS_TOKEN }}
           filename: metrics-achievements.svg
           output_action: none
+          # Fail on plugin errors instead of drawing the error into the image.
+          plugins_errors_fatal: yes
+          retries: 2
+          retries_delay: 30
           base: ""
           plugin_achievements: yes
           plugin_achievements_display: compact
           plugin_achievements_threshold: C
 
       - name: Metrics - coding habits
+        id: habits
         if: steps.metrics.outputs.enabled == 'true'
         uses: lowlighter/metrics@latest
         continue-on-error: true
+        timeout-minutes: 8
         with:
           token: ${{ secrets.METRICS_TOKEN }}
           filename: metrics-habits.svg
           output_action: none
+          # Fail on plugin errors instead of drawing the error into the image.
+          plugins_errors_fatal: yes
+          retries: 2
+          retries_delay: 30
           base: ""
           plugin_habits: yes
           plugin_habits_facts: yes
@@ -223,6 +241,10 @@ jobs:
             fi
           done
           sudo chown -R "$(id -u):$(id -g)" profile
+
+      - name: Warn if metrics failed
+        if: steps.metrics.outputs.enabled == 'true' && (steps.ach.outcome == 'failure' || steps.habits.outcome == 'failure')
+        run: echo "::warning title=Metrics not updated::A metrics step failed. If it says 'Bad credentials', METRICS_TOKEN has expired or been revoked; put a new token in the secret."
 
       - name: Commit images
         run: bash scripts/commit-generated.sh "Update profile cards"
@@ -243,7 +265,10 @@ jobs:
       - run: mkdir -p profile
 
       - name: Space shooter
-        uses: czl9707/gh-space-shooter@v2
+        # The @v2 tag and every v2.0.x release lack the no-commit input and always
+        # commit + push on their own. 158ae82 is the merge (PR #50) that adds it;
+        # switch back to a version tag once a release after 2.0.5 includes it.
+        uses: czl9707/gh-space-shooter@158ae82cc0dc704f06a71c87dc40afdfebcc6f88
         continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

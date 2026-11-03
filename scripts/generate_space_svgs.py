@@ -6,9 +6,12 @@ Standard library only. Run from the repository root:
     python3 scripts/generate_space_svgs.py
 
 Writes assets/header.svg and assets/footer.svg. Everything is drawn with plain
-SVG shapes and CSS animations, so the images need no fonts or external files and
-keep working when GitHub embeds them as <img>. Edit the constants below
-(text, colors, timings) and re-run to change them.
+SVG shapes, CSS animations and a little SMIL (the ship orbiting the planet), so
+the images need no fonts or external files and keep working when GitHub embeds
+them as <img>. Edit the constants below (text, colors, timings) and re-run to
+change them. Text can only use the characters the pixel font has (see FONT);
+the script stops with a clear message if a character is missing or a line is
+too long for its spot.
 """
 
 from __future__ import annotations
@@ -35,6 +38,8 @@ ORANGE = "#ff9e64"
 YELLOW = "#e0af68"
 GREEN = "#9ece6a"
 
+# Text below can use only A-Z, 0-9, space and ! ' + , - . : > _
+# (lowercase is drawn as uppercase; the pixel font has no other glyphs).
 HEADER_GREETING = "HI THERE, I'M"
 HEADER_NAME = "AHMAD"
 # Typed out one after another under the name, like a terminal prompt.
@@ -118,7 +123,12 @@ def pixel_text_path(text: str, x: float, y: float, scale: float) -> str:
     """Path data for text drawn in the pixel font. Horizontal runs are merged."""
     parts = []
     for i, ch in enumerate(text.upper()):
-        rows = FONT[ch]
+        rows = FONT.get(ch)
+        if rows is None:
+            raise ValueError(
+                f"the pixel font has no glyph for {ch!r} in {text!r}; "
+                f"supported characters: {''.join(sorted(FONT))!r}"
+            )
         gx = x + i * ADVANCE * scale
         for r, row in enumerate(rows):
             c = 0
@@ -132,6 +142,12 @@ def pixel_text_path(text: str, x: float, y: float, scale: float) -> str:
                 else:
                     c += 1
     return "".join(parts)
+
+
+def check_fits(what: str, text: str, right_edge: float, limit: float) -> None:
+    """Stop with a clear message when text would run past `limit` (in px)."""
+    if right_edge > limit:
+        raise ValueError(f"{what} {text!r} is too long: it would end at x={right_edge:.0f}, limit {limit:.0f}")
 
 
 def fmt(v: float) -> str:
@@ -322,6 +338,8 @@ def typing_block(roles: list[str], x: float, y: float, scale: float) -> tuple[st
     Returns (svg, css). The loop starts with roles[0] fully typed and ends by
     re-typing it, so the first frame and the last frame match.
     """
+    for role in roles:  # fail early, naming the whole role, if a glyph is missing
+        pixel_text_path(role, 0, 0, 1)
     adv = ADVANCE * scale
     prompt = pixel_text_path(">", x, y, scale)
     text_x = x + 2 * adv
@@ -344,10 +362,10 @@ def typing_block(roles: list[str], x: float, y: float, scale: float) -> tuple[st
             cursor.append((t, i))
         t += GAP
         m = len(roles[nxt])
-        for i in range(m):  # type
+        for i in range(m):  # type: the letter appears and the cursor moves past it together
             shown[nxt][i].append(t)
-            t += TYPE_SPEED
             cursor.append((t, i + 1))
+            t += TYPE_SPEED
         if nxt != 0:
             t += HOLD
         current = nxt
@@ -423,12 +441,20 @@ def orbiter(px: float, py: float, half: str) -> str:
             f'<animate attributeName="r" values="{fmt(r)};{fmt(r * 0.55)};{fmt(r)}" dur="{fmt(0.5 + 0.07 * i)}s" repeatCount="indefinite"/>'
             f'<animateMotion dur="{dur}s" repeatCount="indefinite" begin="-{fmt(dur - lag)}s" path="{path}"/></circle>'
         )
+    # SMIL ignores prefers-reduced-motion, so reduced-motion viewers get a ship
+    # parked on the near side instead (see .orbit / .orbit-still in the header CSS).
+    still = ""
+    if half == "front":
+        still = (
+            f'<g class="orbit-still" transform="rotate({ORBIT_TILT} {px} {py}) translate({px} {py + ry}) scale(1.2)">'
+            f"{flame}{ship}</g>"
+        )
     return (
-        f'<g transform="rotate({ORBIT_TILT} {px} {py})" clip-path="url(#o{half})">'
+        f'<g class="orbit" transform="rotate({ORBIT_TILT} {px} {py})" clip-path="url(#o{half})">'
         f'{"".join(trail)}'
         f'<g><animateMotion dur="{dur}s" repeatCount="indefinite" rotate="auto" path="{path}"/>'
         f'<g>{depth}<g class="flame">{flame}</g>{ship}</g></g>'
-        f"</g>"
+        f"</g>{still}"
     )
 
 
@@ -452,6 +478,13 @@ def build_header() -> str:
     # Planet with a ring: the back half of the ring is drawn behind the planet,
     # the front half (clipped to the lower half) in front of it.
     px, py, pr = 865, 140, 72
+
+    ring_left = px - 140
+    check_fits("HEADER_GREETING", HEADER_GREETING, x0 + text_width(HEADER_GREETING, greet_scale), ring_left)
+    check_fits("HEADER_NAME", HEADER_NAME, x0 + 7 + text_width(HEADER_NAME, name_scale), ring_left)
+    adv = ADVANCE * tag_scale
+    for role in HEADER_ROLES:
+        check_fits("HEADER_ROLES entry", role, x0 + 2 * adv + len(role) * adv + 5 * tag_scale, W - 24)
     ring = f'<ellipse cx="{px}" cy="{py}" rx="128" ry="26" fill="none" stroke="url(#hring)" stroke-width="7"/>'
 
     ship = sprite_rects(SHIP, SHIP_COLORS, 3)
@@ -489,7 +522,7 @@ def build_header() -> str:
 <style>
   .tw{{animation:twinkle 4s ease-in-out infinite}}
   .tw1{{animation-delay:-1s}} .tw2{{animation-delay:-2s}} .tw3{{animation-delay:-3s}}
-  @keyframes twinkle{{0%,100%{{opacity:.25}}50%{{opacity:1}}}}
+  @keyframes twinkle{{0%,100%{{fill-opacity:.25}}50%{{fill-opacity:1}}}}
   .neb{{animation:drift 14s ease-in-out infinite alternate}}
   @keyframes drift{{from{{transform:translate(0,0)}}to{{transform:translate(40px,12px)}}}}
   .planet{{animation:bob 7s ease-in-out infinite alternate}}
@@ -506,6 +539,8 @@ def build_header() -> str:
   {typing_css}
   .glow{{animation:glow 3s ease-in-out infinite alternate}}
   @keyframes glow{{from{{opacity:.35}}to{{opacity:.8}}}}
+  .orbit-still{{display:none}}
+  @media (prefers-reduced-motion: reduce){{.orbit{{display:none}}.orbit-still{{display:inline}}}}
   {REDUCED_MOTION}
 </style>
 <g clip-path="url(#hclip)">
@@ -589,7 +624,7 @@ def build_footer() -> str:
     for n, rmin, rmax, speed, op in [(45, 0.5, 1.0, 40, 0.5), (28, 0.8, 1.5, 22, 0.75), (14, 1.2, 2.2, 11, 1.0)]:
         field = stars(rng, n, W, H, rmin, rmax, [FG, FG, CYAN, PURPLE])
         layers.append(
-            f'<g class="sf" style="animation-duration:{speed}s" opacity="{op}">'
+            f'<g class="sf" style="animation-duration:{speed}s" fill-opacity="{op}">'
             f'{field}<g transform="translate({W} 0)">{field}</g></g>'
         )
 
@@ -770,7 +805,7 @@ def build_footer() -> str:
         f1, f2 = sprite_rects(sprite[0], colors, s), sprite_rects(sprite[1], colors, s)
         aliens_svg.append(f"""
   <g transform="translate({alien_x} {fmt(ay)})">
-    <g class="a{lane}"><g class="wig" style="animation-delay:-{fmt(lane * 0.45)}s"><g class="fa">{f1}</g><g class="fb">{f2}</g></g></g>
+    <g class="a{lane}"><g class="wig" style="animation-delay:-{fmt(lane * 0.45)}s"><g class="fa">{f1}</g><g class="fb" {hidden}>{f2}</g></g></g>
   </g>
   <g transform="translate({fmt(alien_cx)} {lanes[lane]})"><g class="w{lane}" {hidden}>
     <rect x="-5" y="-26" width="10" height="52" rx="5" fill="{CYAN}" opacity=".4"/><rect x="-1.5" y="-26" width="3" height="52" fill="#ffffff"/>
@@ -829,6 +864,10 @@ def build_footer() -> str:
 
     # --- HUD and title ----------------------------------------------------------------
     title_scale, sub_scale, hud_scale = 4, 2, 2
+    # The title must stay clear of the bottom alien's explosion; the HUD name of LIVES.
+    check_fits("FOOTER_TITLE", FOOTER_TITLE, (W + text_width(FOOTER_TITLE, title_scale)) / 2, alien_cx - 45)
+    check_fits("FOOTER_SUBTITLE", FOOTER_SUBTITLE, (W + text_width(FOOTER_SUBTITLE, sub_scale)) / 2, W - 24)
+    check_fits("FOOTER_PLAYER", FOOTER_PLAYER, 28 + text_width("1UP ", hud_scale) + 6 + text_width(FOOTER_PLAYER, hud_scale), W - 170)
     title = pixel_text_path(FOOTER_TITLE, (W - text_width(FOOTER_TITLE, title_scale)) / 2, 236, title_scale)
     title_shadow = pixel_text_path(FOOTER_TITLE, (W - text_width(FOOTER_TITLE, title_scale)) / 2 + 3, 239, title_scale)
     sub = pixel_text_path(FOOTER_SUBTITLE, (W - text_width(FOOTER_SUBTITLE, sub_scale)) / 2, 276, sub_scale)
