@@ -13,6 +13,7 @@ keep working when GitHub embeds them as <img>. Edit the constants below
 
 from __future__ import annotations
 
+import math
 import random
 from pathlib import Path
 
@@ -538,15 +539,44 @@ def build_header() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Footer: the ship clears a wave of aliens, forever.
+# Footer: a short scripted battle that loops every FOOTER_LOOP seconds.
+#
+#   0.3s  the middle alien fires; the ship raises its shield and the bolt bursts on it
+#   1.1s  the top and bottom aliens fire too; both bolts hit the shield
+#   2.7s  shield down; the ship flies to the top lane and shoots the top alien
+#   3.6s  the middle alien fires again; the ship dodges to the bottom lane and
+#         shoots the bottom alien while the bolt flies through the empty lane
+#   4.7s  back to the middle: charge up, fire a beam, big explosion, +300
+#   6.6s  WAVE CLEAR! then the aliens warp back in one by one
 # ---------------------------------------------------------------------------
 
-LOOP = 4.5  # seconds for one full cycle (three shots)
-SEG = LOOP / 3  # one shot per lane
+FOOTER_LOOP = 10.0  # seconds for the whole battle
+
+Frame = tuple[float, str]
 
 
-def pct(t: float) -> str:
-    return fmt(100 * t / LOOP) + "%"
+def keyframes(name: str, frames: list[Frame], total: float = FOOTER_LOOP) -> str:
+    """CSS keyframes from (seconds, declarations) pairs.
+
+    A value holds between two pairs that repeat it. The first value is reused
+    at the end so the loop is seamless.
+    """
+    frames = sorted(frames, key=lambda f: f[0])
+    if frames[0][0] > 0:
+        frames.insert(0, (0.0, frames[0][1]))
+    if frames[-1][0] < total:
+        frames.append((total, frames[0][1]))
+    body = "".join(f"{fmt(100 * t / total)}%{{{css}}}" for t, css in frames)
+    return f"@keyframes {name}{{{body}}}"
+
+
+def blip(t: float, on: str, off: str, rise: float = 0.05, hold: float = 0.0, fall: float = 0.25) -> list[Frame]:
+    """A quick flash: off at t, on after `rise`, (held for `hold`), off again after `fall`."""
+    frames = [(t, off), (t + rise, on)]
+    if hold:
+        frames.append((t + rise + hold, on))
+    frames.append((t + rise + hold + fall, off))
+    return frames
 
 
 def build_footer() -> str:
@@ -556,103 +586,248 @@ def build_footer() -> str:
     # Parallax starfield: each layer is drawn twice side by side and scrolled
     # left by exactly one width, so the loop is seamless.
     layers = []
-    for i, (n, rmin, rmax, speed, op) in enumerate(
-        [(45, 0.5, 1.0, 40, 0.5), (28, 0.8, 1.5, 22, 0.75), (14, 1.2, 2.2, 11, 1.0)]
-    ):
+    for n, rmin, rmax, speed, op in [(45, 0.5, 1.0, 40, 0.5), (28, 0.8, 1.5, 22, 0.75), (14, 1.2, 2.2, 11, 1.0)]:
         field = stars(rng, n, W, H, rmin, rmax, [FG, FG, CYAN, PURPLE])
         layers.append(
             f'<g class="sf" style="animation-duration:{speed}s" opacity="{op}">'
             f'{field}<g transform="translate({W} 0)">{field}</g></g>'
         )
 
-    scale = 4
-    lanes = [96, 146, 196]  # lane centre y
-    order = [0, 2, 1]  # which lane each shot targets, in time order
+    s = 4  # sprite pixel size
+    lanes = [96, 146, 196]  # lane centre y: top, middle, bottom
+    mid = lanes[1]
     ship_x = 96
-    ship_h = len(SHIP) * scale
-    ship_nose = ship_x + len(SHIP[0]) * scale
+    ship_w, ship_h = len(SHIP[0]) * s, len(SHIP) * s
+    nose = ship_x + ship_w
     alien_x = 820
-    alien_w = 11 * scale
+    alien_w = 11 * s
+    alien_cx = alien_x + alien_w / 2
+    shield_r = 46
+    shield_edge = ship_x + ship_w / 2 + shield_r
 
-    # Ship moves between lanes: start in the last lane of the previous cycle.
-    move = 0.35
-    frames = []
-    for k, lane in enumerate(order):
-        t0 = k * SEG
-        prev = order[k - 1]
-        frames.append(f"{pct(t0)}{{transform:translateY({lanes[prev] - lanes[1]}px)}}")
-        frames.append(f"{pct(t0 + move)}{{transform:translateY({lanes[lane] - lanes[1]}px)}}")
-    frames.append(f"100%{{transform:translateY({lanes[order[-1]] - lanes[1]}px)}}")
-    ship_keys = "".join(frames)
+    css: list[str] = []
 
-    fire, hit = 0.42, 0.75
-    respawn_start, respawn_end = 3.2, 3.6
-    travel = alien_x - 8 - ship_nose
+    def anim(cls: str, frames: list[Frame], timing: str = "linear", extra: str = "") -> None:
+        css.append(f".{cls}{{animation:{cls} {fmt(FOOTER_LOOP)}s {timing} infinite both;{extra}}}")
+        css.append(keyframes(cls, frames))
 
+    centred = "transform-box:fill-box;transform-origin:center"
+    hidden = 'opacity="0"'  # transient pieces stay hidden when animations are off
+
+    # --- Timeline (seconds) ---------------------------------------------------
+    enemy_shots = [  # (name, from lane, fire time, end time, end x, end y)
+        ("b1", 1, 0.30, 1.00, shield_edge + 4, mid),
+        ("b2", 0, 1.10, 1.75, shield_edge + 4, mid - 4),
+        ("b3", 2, 1.40, 2.10, shield_edge + 4, mid + 4),
+        ("b4", 1, 3.60, 4.70, -40, mid),  # dodged: flies through the empty lane
+    ]
+    shield_hits = [1.00, 1.75, 2.10]
+    ship_shots = [("l0", 0, 3.15, 3.47), ("l2", 2, 4.10, 4.42)]  # (name, lane, fire, hit)
+    charge_start, beam_on, beam_off = 5.10, 5.95, 6.45
+    hits = {0: 3.47, 2: 4.42, 1: 6.00}  # when each alien is destroyed
+    warps = {0: 7.85, 1: 8.10, 2: 8.35}  # when each alien warps back in
+    wave_clear = 6.60
+
+    # --- Ship -------------------------------------------------------------------
+    def lane_y(lane: int) -> str:
+        return f"transform:translateY({lanes[lane] - mid}px)"
+
+    anim(
+        "ship",
+        [(0, lane_y(1)), (2.75, lane_y(1)), (3.10, lane_y(0)), (3.65, lane_y(0)),
+         (4.05, lane_y(2)), (4.70, lane_y(2)), (5.10, lane_y(1))],
+        timing="ease-in-out",
+    )
+    anim("recoil", [(0, "transform:translateX(0px)"), (beam_on, "transform:translateX(0px)"),
+                    (beam_on + 0.05, "transform:translateX(-10px)"), (beam_on + 0.45, "transform:translateX(0px)")],
+         timing="ease-out")
+    anim("shield", [(0, "opacity:0;transform:scale(.6)"), (0.40, "opacity:0;transform:scale(.6)"),
+                    (0.65, "opacity:1;transform:scale(1)"), (2.45, "opacity:1;transform:scale(1)"),
+                    (2.70, "opacity:0;transform:scale(1.2)")], extra=centred)
+    flare, spark = [], []
+    for t in shield_hits:
+        flare += blip(t, "opacity:1", "opacity:0", rise=0.04, fall=0.30)
+        spark += blip(t, "opacity:1;transform:scale(1)", "opacity:0;transform:scale(.3)", rise=0.04, fall=0.22)
+    anim("sflare", flare)
+    anim("spark", spark, extra=centred)
+
+    ship = sprite_rects(SHIP, SHIP_COLORS, s)
+    flame = sprite_rects(FLAME, FLAME_COLORS, s, x=-4 * s, y=4 * s)
+    scx, scy = ship_w / 2, ship_h / 2
+    spark_rays = "".join(
+        f'<line x1="0" y1="0" x2="{fmt(11 * dx)}" y2="{fmt(11 * dy)}" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>'
+        for dx, dy in [(1, 0), (0.7, 0.7), (0.7, -0.7), (0, 1), (0, -1)]
+    )
+    ship_svg = f"""
+  <g transform="translate({ship_x} {mid - ship_h / 2})">
+    <g class="ship"><g class="recoil">
+      <g class="shield" {hidden}>
+        <circle cx="{scx}" cy="{scy}" r="{shield_r}" fill="url(#fshield)" stroke="{CYAN}" stroke-opacity=".9" stroke-width="2.5"/>
+        <g class="spin"><circle cx="{scx}" cy="{scy}" r="{shield_r - 6}" fill="none" stroke="{TEAL}" stroke-width="2" stroke-dasharray="4 9" opacity=".8"/></g>
+        <circle class="sflare" {hidden} cx="{scx}" cy="{scy}" r="{shield_r}" fill="none" stroke="#ffffff" stroke-width="5"/>
+      </g>
+      <g class="hover"><g class="flame">{flame}</g>{ship}</g>
+      <g transform="translate({scx + shield_r} {scy})"><g class="spark" {hidden}>{spark_rays}<circle r="5" fill="#ffffff"/></g></g>
+    </g></g>
+  </g>"""
+
+    # --- Enemy fire ---------------------------------------------------------------
     aliens = [
         (BLOB, {"#": PINK, "W": FG, "K": BG}, PINK),
         (SAUCER, {"#": GREEN, "W": CYAN, "Y": YELLOW}, GREEN),
         (URCHIN, {"#": PURPLE, "W": FG}, PURPLE),
     ]
+    bolts_svg = []
+    for name, lane, t0, t1, ex, ey in enemy_shots:
+        sx, sy = alien_x - 6, lanes[lane]
+        dx, dy = fmt(ex - sx), fmt(ey - sy)
+        anim(name, [(t0, "opacity:0;transform:translate(0px,0px)"), (t0 + 0.01, "opacity:1;transform:translate(0px,0px)"),
+                    (t1, f"opacity:1;transform:translate({dx}px,{dy}px)"),
+                    (t1 + 0.01, f"opacity:0;transform:translate({dx}px,{dy}px)")])
+        color = aliens[lane][2]
+        bolts_svg.append(
+            f'<g transform="translate({sx} {sy})"><g class="{name}" {hidden}>'
+            f'<ellipse cx="10" cy="0" rx="13" ry="3.5" fill="{color}" opacity=".35"/>'
+            f'<circle r="8" fill="{color}" opacity=".35"/><circle r="4.5" fill="{color}"/><circle r="2" fill="#ffffff"/></g></g>'
+        )
+    # Each alien glows for a moment before it fires.
+    tells_svg = []
+    for lane in range(3):
+        times = [t0 for _, ln, t0, *_ in enemy_shots if ln == lane]
+        frames: list[Frame] = []
+        for t in times:
+            frames += [(t - 0.18, "opacity:0;transform:scale(.2)"), (t, "opacity:1;transform:scale(1)"),
+                       (t + 0.12, "opacity:0;transform:scale(1.4)")]
+        anim(f"tell{lane}", frames, extra=centred)
+        color = aliens[lane][2]
+        tells_svg.append(
+            f'<g transform="translate({alien_x - 4} {lanes[lane]})"><g class="tell{lane}" {hidden}>'
+            f'<circle r="10" fill="{color}" opacity=".45"/><circle r="4" fill="#ffffff"/></g></g>'
+        )
 
-    lane_groups = []
-    for k, lane in enumerate(order):
-        delay = fmt(k * SEG)
-        sprite, colors, color = aliens[lane]
-        a_h = len(sprite[0]) * scale
-        ay = lanes[lane] - a_h / 2
-        f1 = sprite_rects(sprite[0], colors, scale)
-        f2 = sprite_rects(sprite[1], colors, scale)
-        # Debris: 8 pixels thrown outward.
-        debris = []
-        for j, (dx, dy) in enumerate([(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)]):
-            debris.append(
-                f'<rect class="deb d{j}" x="-4" y="-4" width="8" height="8" fill="{(color, YELLOW, FG)[j % 3]}" '
-                f'style="animation-delay:{delay}s"/>'
-            )
-        cx, cy = alien_x + alien_w / 2, lanes[lane]
-        popup = pixel_text_path("+100", 0, 0, 2)
-        lane_groups.append(
-            f"""
-  <g transform="translate({ship_nose} {lanes[lane] - 2})">
-    <g class="laser" style="animation-delay:{delay}s">
+    # --- Ship fire ------------------------------------------------------------------
+    travel = fmt(alien_x - 8 - nose)
+    lasers_svg = []
+    for name, lane, tf, th in ship_shots:
+        anim(name, [(tf, "opacity:0;transform:translateX(0px)"), (tf + 0.01, "opacity:1;transform:translateX(0px)"),
+                    (th, f"opacity:1;transform:translateX({travel}px)"), (th + 0.01, f"opacity:0;transform:translateX({travel}px)")])
+        anim(f"m{name}", blip(tf, "opacity:.95;transform:scale(1)", "opacity:0;transform:scale(.2)", rise=0.03, fall=0.14),
+             extra=centred)
+        lasers_svg.append(f"""
+  <g transform="translate({nose} {lanes[lane] - 2})">
+    <g class="{name}" {hidden}>
       <rect x="0" y="-3" width="34" height="10" rx="5" fill="{TEAL}" opacity=".35"/>
       <rect x="0" y="0" width="34" height="4" rx="2" fill="{CYAN}"/>
       <rect x="20" y="0" width="14" height="4" rx="2" fill="#ffffff"/>
     </g>
-    <g class="muzzle" style="animation-delay:{delay}s"><circle r="12" cx="2" cy="2" fill="{CYAN}" opacity=".45"/><circle r="6" cx="2" cy="2" fill="#ffffff"/></g>
+    <g class="m{name}" {hidden}><circle r="12" cx="2" cy="2" fill="{CYAN}" opacity=".45"/><circle r="6" cx="2" cy="2" fill="#ffffff"/></g>
+  </g>""")
+
+    # Charge-up: an orb grows at the nose while particles are pulled into it.
+    anim("orb", [(charge_start, "opacity:0;transform:scale(0)"), (charge_start + 0.05, "opacity:1;transform:scale(.25)"),
+                 (beam_on - 0.03, "opacity:1;transform:scale(1.15)"), (beam_on + 0.05, "opacity:0;transform:scale(1.8)")],
+         extra=centred)
+    pulls = []
+    for i in range(10):
+        a = math.radians(i * 137.5)
+        r = 40 if i % 2 else 54
+        px, py = fmt(r * math.cos(a)), fmt(r * math.sin(a))
+        t = charge_start + 0.075 * i
+        anim(f"pull{i}", [(t, f"opacity:0;transform:translate({px}px,{py}px)"),
+                          (t + 0.05, f"opacity:1;transform:translate({px}px,{py}px)"),
+                          (t + 0.38, "opacity:0;transform:translate(0px,0px)")], timing="ease-in")
+        pulls.append(f'<circle class="pull{i}" {hidden} r="{2.2 if i % 2 else 1.6}" fill="{(CYAN, "#ffffff", TEAL)[i % 3]}"/>')
+    anim("beam", [(beam_on, "opacity:0;transform:scaleY(0)"), (beam_on + 0.05, "opacity:1;transform:scaleY(1.35)"),
+                  (beam_on + 0.13, "opacity:1;transform:scaleY(1)"), (beam_off - 0.13, "opacity:1;transform:scaleY(.85)"),
+                  (beam_off, "opacity:0;transform:scaleY(0)")], extra="transform-box:fill-box;transform-origin:0 50%")
+    anim("flash", blip(hits[1], "opacity:.22", "opacity:0", rise=0.03, fall=0.30))
+    beam_len = fmt(alien_cx + 10 - nose)
+    charge_svg = f"""
+  <g transform="translate({nose + 6} {mid})">
+    <g class="orb" {hidden}><g class="opulse"><circle r="18" fill="{CYAN}" opacity=".35"/><circle r="10" fill="{CYAN}" opacity=".8"/><circle r="5" fill="#ffffff"/></g></g>
+    {"".join(pulls)}
   </g>
+  <g transform="translate({nose} {mid})">
+    <g class="beam" {hidden}><g class="bflick">
+      <rect x="0" y="-13" width="{beam_len}" height="26" rx="13" fill="{CYAN}" opacity=".3"/>
+      <rect x="0" y="-6" width="{beam_len}" height="12" rx="6" fill="{CYAN}"/>
+      <rect x="0" y="-2.5" width="{beam_len}" height="5" rx="2.5" fill="#ffffff"/>
+    </g></g>
+  </g>"""
+
+    # --- Aliens: destroyed, then warp back in -------------------------------------
+    alive = "opacity:1;transform:scale(1)"
+    aliens_svg, booms_svg = [], []
+    for lane, (sprite, colors, color) in enumerate(aliens):
+        hit, warp = hits[lane], warps[lane]
+        big = lane == 1  # the beam kill gets the big explosion
+        anim(f"a{lane}", [(hit, alive), (hit + 0.08, "opacity:0;transform:scale(1.35)"), (hit + 0.09, "opacity:0;transform:scale(0)"),
+                          (warp, "opacity:0;transform:scale(0)"), (warp + 0.25, "opacity:1;transform:scale(1.15)"),
+                          (warp + 0.40, alive)], extra=centred)
+        anim(f"w{lane}", [(warp - 0.05, "opacity:0;transform:scale(1,0)"), (warp + 0.08, "opacity:1;transform:scale(1,1)"),
+                          (warp + 0.30, "opacity:0;transform:scale(6,.15)")], extra=centred)
+        ay = lanes[lane] - len(sprite[0]) * s / 2
+        f1, f2 = sprite_rects(sprite[0], colors, s), sprite_rects(sprite[1], colors, s)
+        aliens_svg.append(f"""
   <g transform="translate({alien_x} {fmt(ay)})">
-    <g class="alien" style="animation-delay:{delay}s">
-      <g class="wig" style="animation-delay:-{fmt(k * 0.45)}s">
-        <g class="fa">{f1}</g><g class="fb">{f2}</g>
-      </g>
-    </g>
+    <g class="a{lane}"><g class="wig" style="animation-delay:-{fmt(lane * 0.45)}s"><g class="fa">{f1}</g><g class="fb">{f2}</g></g></g>
   </g>
-  <g transform="translate({fmt(cx)} {fmt(cy)})">
-    <circle class="ring" r="22" fill="none" stroke="{color}" stroke-width="3" style="animation-delay:{delay}s"/>
-    <circle class="boom" r="12" fill="#ffffff" style="animation-delay:{delay}s"/>
+  <g transform="translate({fmt(alien_cx)} {lanes[lane]})"><g class="w{lane}" {hidden}>
+    <rect x="-5" y="-26" width="10" height="52" rx="5" fill="{CYAN}" opacity=".4"/><rect x="-1.5" y="-26" width="3" height="52" fill="#ffffff"/>
+  </g></g>""")
+
+        grow = 1.6 if big else 1.0
+        anim(f"ring{lane}", [(hit, "opacity:0;transform:scale(.2)"), (hit + 0.02, "opacity:1;transform:scale(.4)"),
+                             (hit + 0.45 * grow, f"opacity:0;transform:scale({fmt(1.8 * grow)})")], timing="ease-out", extra=centred)
+        anim(f"boom{lane}", [(hit, "opacity:0;transform:scale(.3)"), (hit + 0.02, "opacity:1;transform:scale(1)"),
+                             (hit + 0.16 * grow, f"opacity:0;transform:scale({fmt(1.5 * grow)})")], timing="ease-out", extra=centred)
+        rings = f'<circle class="ring{lane}" {hidden} r="22" fill="none" stroke="{color}" stroke-width="3"/>'
+        if big:
+            anim("ring1b", [(hit + 0.08, "opacity:0;transform:scale(.2)"), (hit + 0.10, "opacity:.9;transform:scale(.4)"),
+                            (hit + 0.75, "opacity:0;transform:scale(2.4)")], timing="ease-out", extra=centred)
+            rings += f'<circle class="ring1b" {hidden} r="22" fill="none" stroke="#ffffff" stroke-width="2"/>'
+        n_debris = 12 if big else 8
+        debris = []
+        for j in range(n_debris):
+            a = 2 * math.pi * j / n_debris
+            dist = (78 if j % 2 else 56) if big else (54 if j % 2 == 0 else 40)
+            dx, dy = fmt(dist * math.cos(a)), fmt(dist * math.sin(a))
+            name = f"d{lane}_{j}"
+            anim(name, [(hit, "opacity:0;transform:translate(0px,0px) rotate(0deg)"),
+                        (hit + 0.01, "opacity:1;transform:translate(0px,0px) rotate(0deg)"),
+                        (hit + 0.5 * grow, f"opacity:0;transform:translate({dx}px,{dy}px) rotate(120deg)")], timing="ease-out")
+            debris.append(f'<rect class="{name}" {hidden} x="-4" y="-4" width="8" height="8" fill="{(color, YELLOW, FG)[j % 3]}"/>')
+        points = "+300" if big else "+100"
+        pop_scale = 3 if big else 2
+        anim(f"pop{lane}", [(hit, "opacity:0;transform:translateY(0px)"), (hit + 0.05, "opacity:1;transform:translateY(-2px)"),
+                            (hit + 0.70, "opacity:1;transform:translateY(-18px)"), (hit + 0.90, "opacity:0;transform:translateY(-24px)")],
+             timing="ease-out")
+        popup = pixel_text_path(points, 0, 0, pop_scale)
+        booms_svg.append(f"""
+  <g transform="translate({fmt(alien_cx)} {lanes[lane]})">
+    {rings}
+    <circle class="boom{lane}" {hidden} r="{16 if big else 12}" fill="#ffffff"/>
     {"".join(debris)}
   </g>
-  <g transform="translate({fmt(alien_x - text_width('+100', 2) - 14)} {fmt(cy - 26)})">
-    <path class="pop" d="{popup}" fill="{YELLOW}" shape-rendering="crispEdges" style="animation-delay:{delay}s"/>
-  </g>"""
-        )
+  <g transform="translate({fmt(alien_x - text_width(points, pop_scale) - 14)} {lanes[lane] - 26})">
+    <path class="pop{lane}" {hidden} d="{popup}" fill="{YELLOW}" shape-rendering="crispEdges"/>
+  </g>""")
 
-    debris_keys = []
-    for j, (dx, dy) in enumerate([(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)]):
-        dist = 54 if dx == 0 or dy == 0 else 40
-        debris_keys.append(
-            f".d{j}{{animation-name:deb{j}}}"
-            f"@keyframes deb{j}{{0%,{pct(hit)}{{transform:translate(0,0);opacity:0}}"
-            f"{pct(hit + 0.01)}{{opacity:1;transform:translate(0,0)}}"
-            f"{pct(hit + 0.5)}{{opacity:0;transform:translate({dx * dist}px,{dy * dist}px) rotate(90deg)}}"
-            f"100%{{opacity:0;transform:translate({dx * dist}px,{dy * dist}px)}}}}"
-        )
+    # --- WAVE CLEAR! ----------------------------------------------------------------
+    clear = []
+    for a, b in [(0.0, 0.35), (0.45, 0.80), (0.90, 1.20)]:
+        clear += [(wave_clear + a, "opacity:0"), (wave_clear + a + 0.01, "opacity:1"),
+                  (wave_clear + b, "opacity:1"), (wave_clear + b + 0.01, "opacity:0")]
+    anim("clear", clear)
+    wc_scale = 4
+    wc_x = (W - text_width("WAVE CLEAR!", wc_scale)) / 2
+    wc_svg = (
+        f'<g class="clear" {hidden}>'
+        f'<path d="{pixel_text_path("WAVE CLEAR!", wc_x + 3, mid - 11, wc_scale)}" fill="#2a2f6b" shape-rendering="crispEdges"/>'
+        f'<path d="{pixel_text_path("WAVE CLEAR!", wc_x, mid - 14, wc_scale)}" fill="{YELLOW}" shape-rendering="crispEdges"/></g>'
+    )
 
-    ship = sprite_rects(SHIP, SHIP_COLORS, scale)
-    flame = sprite_rects(FLAME, FLAME_COLORS, scale, x=-4 * scale, y=4 * scale)
-
+    # --- HUD and title ----------------------------------------------------------------
     title_scale, sub_scale, hud_scale = 4, 2, 2
     title = pixel_text_path(FOOTER_TITLE, (W - text_width(FOOTER_TITLE, title_scale)) / 2, 236, title_scale)
     title_shadow = pixel_text_path(FOOTER_TITLE, (W - text_width(FOOTER_TITLE, title_scale)) / 2 + 3, 239, title_scale)
@@ -665,7 +840,12 @@ def build_footer() -> str:
     )
 
     return (
-        svg_open(W, H, "Thanks for visiting!", "Animated footer: a pixel spaceship moves between lanes and shoots aliens over a scrolling starfield, above the text Thanks for visiting, see you in orbit.")
+        svg_open(
+            W, H, "Thanks for visiting!",
+            "Animated footer: aliens fire at a pixel spaceship, which blocks the shots with a shield, dodges, "
+            "shoots back and finishes the wave with a charged beam, over a scrolling starfield, above the text "
+            "Thanks for visiting, see you in orbit.",
+        )
         + background(W, H, "f")
         + f"""
 <defs>
@@ -674,48 +854,48 @@ def build_footer() -> str:
     <stop offset="0.5" stop-color="{BLUE}"/>
     <stop offset="1" stop-color="{PURPLE}"/>
   </linearGradient>
+  <radialGradient id="fshield" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="{CYAN}" stop-opacity="0"/>
+    <stop offset="0.7" stop-color="{CYAN}" stop-opacity="0.06"/>
+    <stop offset="1" stop-color="{CYAN}" stop-opacity="0.35"/>
+  </radialGradient>
 </defs>
 <style>
   .sf{{animation:scroll linear infinite}}
   @keyframes scroll{{from{{transform:translateX(0)}}to{{transform:translateX(-{W}px)}}}}
-  .ship{{animation:lanes {LOOP}s ease-in-out infinite}}
-  @keyframes lanes{{{ship_keys}}}
   .hover{{animation:hover 1.3s ease-in-out infinite alternate}}
   @keyframes hover{{from{{transform:translateY(-3px)}}to{{transform:translateY(3px)}}}}
   .flame{{animation:flicker .12s steps(2) infinite alternate;transform-box:fill-box;transform-origin:100% 50%}}
   @keyframes flicker{{from{{transform:scaleX(.55)}}to{{transform:scaleX(1.3)}}}}
-  .laser{{opacity:0;animation:laser {LOOP}s linear infinite both}}
-  @keyframes laser{{0%,{pct(fire)}{{opacity:0;transform:translateX(0)}}{pct(fire + 0.01)}{{opacity:1;transform:translateX(0)}}{pct(hit)}{{opacity:1;transform:translateX({fmt(travel)}px)}}{pct(hit + 0.01)},100%{{opacity:0;transform:translateX({fmt(travel)}px)}}}}
-  .muzzle{{opacity:0;animation:muzzle {LOOP}s linear infinite both;transform-box:fill-box;transform-origin:center}}
-  @keyframes muzzle{{0%,{pct(fire)}{{opacity:0;transform:scale(.2)}}{pct(fire + 0.02)}{{opacity:.9;transform:scale(1)}}{pct(fire + 0.14)},100%{{opacity:0;transform:scale(1.6)}}}}
-  .alien{{animation:alien {LOOP}s linear infinite both;transform-box:fill-box;transform-origin:center}}
-  @keyframes alien{{0%,{pct(hit)}{{opacity:1;transform:scale(1)}}{pct(hit + 0.08)}{{opacity:0;transform:scale(1.35)}}{pct(respawn_start)}{{opacity:0;transform:scale(0)}}{pct(respawn_end)}{{opacity:1;transform:scale(1.1)}}{pct(respawn_end + 0.15)},100%{{opacity:1;transform:scale(1)}}}}
+  .spin{{animation:spin 3s linear infinite;{centred}}}
+  @keyframes spin{{to{{transform:rotate(360deg)}}}}
+  .opulse{{animation:opulse .16s ease-in-out infinite alternate;{centred}}}
+  @keyframes opulse{{from{{transform:scale(.8)}}to{{transform:scale(1.1)}}}}
+  .bflick{{animation:bflick .07s steps(2) infinite alternate}}
+  @keyframes bflick{{from{{opacity:.75}}to{{opacity:1}}}}
   .wig{{animation:wig 1.4s ease-in-out infinite alternate}}
   @keyframes wig{{from{{transform:translateY(-7px)}}to{{transform:translateY(7px)}}}}
   .fa{{animation:fa .9s steps(1) infinite}}
   .fb{{animation:fb .9s steps(1) infinite}}
   @keyframes fa{{0%{{opacity:1}}50%{{opacity:0}}}}
   @keyframes fb{{0%{{opacity:0}}50%{{opacity:1}}}}
-  .boom{{opacity:0;animation:boom {LOOP}s ease-out infinite both;transform-box:fill-box;transform-origin:center}}
-  @keyframes boom{{0%,{pct(hit)}{{opacity:0;transform:scale(.3)}}{pct(hit + 0.02)}{{opacity:1;transform:scale(1)}}{pct(hit + 0.16)},100%{{opacity:0;transform:scale(1.5)}}}}
-  .ring{{opacity:0;animation:ring {LOOP}s ease-out infinite both;transform-box:fill-box;transform-origin:center}}
-  @keyframes ring{{0%,{pct(hit)}{{opacity:0;transform:scale(.2)}}{pct(hit + 0.02)}{{opacity:1;transform:scale(.4)}}{pct(hit + 0.45)},100%{{opacity:0;transform:scale(1.8)}}}}
-  .deb{{opacity:0;animation-duration:{LOOP}s;animation-timing-function:ease-out;animation-iteration-count:infinite;animation-fill-mode:both}}
-  {"".join(debris_keys)}
-  .pop{{opacity:0;animation:pop {LOOP}s ease-out infinite both}}
-  @keyframes pop{{0%,{pct(hit)}{{opacity:0;transform:translateY(0)}}{pct(hit + 0.05)}{{opacity:1}}{pct(hit + 0.7)}{{opacity:1;transform:translateY(-18px)}}{pct(hit + 0.9)},100%{{opacity:0;transform:translateY(-24px)}}}}
   .blink{{animation:blink 1.2s steps(1) infinite}}
   @keyframes blink{{50%{{opacity:.15}}}}
+  {"".join(css)}
   {REDUCED_MOTION}
 </style>
 <g clip-path="url(#fclip)">
   <ellipse cx="520" cy="140" rx="380" ry="120" fill="url(#fneb1)"/>
   <ellipse cx="150" cy="260" rx="260" ry="110" fill="url(#fneb2)"/>
   {"".join(layers)}
-  {"".join(lane_groups)}
-  <g transform="translate({ship_x} {lanes[1] - ship_h / 2})">
-    <g class="ship"><g class="hover"><g class="flame">{flame}</g>{ship}</g></g>
-  </g>
+  {"".join(aliens_svg)}
+  {"".join(tells_svg)}
+  {"".join(booms_svg)}
+  {"".join(lasers_svg)}
+  {charge_svg}
+  {ship_svg}
+  {"".join(bolts_svg)}
+  {wc_svg}
   <path d="{hud_1up}" fill="{PINK}" shape-rendering="crispEdges"/>
   <path d="{hud_name}" fill="{FG}" shape-rendering="crispEdges"/>
   <path d="{hud_lives}" fill="{MUTED}" shape-rendering="crispEdges"/>
@@ -723,6 +903,7 @@ def build_footer() -> str:
   <path d="{title_shadow}" fill="#2a2f6b" shape-rendering="crispEdges"/>
   <path d="{title}" fill="url(#ftitle)" shape-rendering="crispEdges"/>
   <path class="blink" d="{sub}" fill="{YELLOW}" shape-rendering="crispEdges"/>
+  <rect class="flash" {hidden} width="{W}" height="{H}" fill="#ffffff"/>
 </g>
 </svg>
 """
