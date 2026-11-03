@@ -76,12 +76,11 @@
   <img src="profile/contrib-3d.svg" width="100%" alt="3D contribution calendar for the past year" />
 </div>
 
-## 🏅 Trophies & coding habits
+## 🏅 Trophies & code activity
 
 <div align="center">
   <img src="profile/trophies.svg" width="100%" alt="GitHub trophies: commits, pull requests, experience, reviews, issues and repositories" />
   <br /><br />
-  <img src="profile/productive-time.svg" alt="Commits per hour of the day (UTC+3)" />
   <img src="profile/metrics-lines.svg" width="480" alt="Lines of code added and deleted per week" />
 </div>
 

@@ -6,7 +6,6 @@
 #   profile/contrib-3d.svg                     3D contribution calendar
 #   profile/metrics-lines.svg                  lines of code pushed      (lowlighter/metrics)
 #   profile/trophies.svg                       trophies                  (ryo-ma/github-profile-trophy)
-#   profile/productive-time.svg                commits per hour of day   (github-profile-summary-cards)
 #   profile/space-shooter.gif                  contribution graph as a space shooter
 #
 # It runs every day, when started by hand (Actions > Profile cards > Run workflow),
@@ -248,34 +247,6 @@ jobs:
           output_path: profile/trophies.svg
           token: ${{ secrets.GITHUB_TOKEN }}
           theme: tokyonight
-
-      # Commits per hour of day (github-profile-summary-cards). AUTO_PUSH: false
-      # means it only writes profile-summary-card-output/, copied into profile/ below.
-      - name: Productive time card
-        uses: vn7n24fzkq/github-profile-summary-cards@7022eb6bd48de38b092f54110a8ff8185f2ac4a1 # v0.13.0
-        continue-on-error: true
-        timeout-minutes: 8
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          USERNAME: ${{ github.repository_owner }}
-          THEME: tokyonight
-          # Title becomes "Commits (UTC +3.00)". Leave TIME_ZONE unset: it would win
-          # over UTC_OFFSET and print the zone name as the title.
-          UTC_OFFSET: "3"
-          AUTO_PUSH: false
-
-      - name: Keep the productive time card
-        run: |
-          mkdir -p profile
-          src=profile-summary-card-output/tokyonight/4-productive-time.svg
-          # The action logs a failed card and still exits 0, so check the file.
-          if [ -s "$src" ]; then
-            cp "$src" profile/productive-time.svg
-          else
-            echo "::warning title=Productive time card not updated::$src was not generated; keeping the previous image."
-          fi
-          sudo rm -rf profile-summary-card-output
 
       - name: Commit images
         run: bash scripts/commit-generated.sh "Update profile cards"
