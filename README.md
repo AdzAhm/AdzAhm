@@ -76,12 +76,14 @@
   <img src="profile/contrib-3d.svg" width="100%" alt="3D contribution calendar for the past year" />
 </div>
 
+<!-- Hidden until these cards render again (the metrics plugins behind them are broken upstream).
 ## 🏅 Achievements & coding habits
 
 <div align="center">
   <img src="profile/metrics-achievements.svg" width="410" alt="GitHub achievements" />
   <img src="profile/metrics-habits.svg" width="410" alt="Recent coding habits: when I commit and which languages" />
 </div>
+-->
 
 ## 👾 Contribution invaders
 
